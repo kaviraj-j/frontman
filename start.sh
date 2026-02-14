@@ -1,0 +1,1 @@
+go run cmd/main.go /Users/kaviraj-j/Developer/Projects/frontman/frontman_config.json
