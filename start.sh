@@ -1,1 +1,1 @@
-go run cmd/main.go /Users/kaviraj-j/Developer/Projects/frontman/frontman_config.json
+go run cmd/main.go "$HOME/Developer/Projects/frontman/frontman_config.json"

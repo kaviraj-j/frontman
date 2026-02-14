@@ -1,27 +1,43 @@
 package main
 
 import (
-	"fmt"
 	"frontman/internal/config"
+	"frontman/internal/engine"
+	"frontman/internal/server"
 	"log"
 	"os"
 )
 
 func main() {
+	// open (or create) a minimal log file at project root
+	logFile, err := os.OpenFile("frontman.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		log.Fatalf("failed to open log file: %v", err)
+	}
+	defer logFile.Close()
+	log.SetOutput(logFile)
+	log.SetFlags(log.LstdFlags)
+
+	configPath := getConfigPath()
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	eng := engine.NewEngine(cfg)
+	srv := server.NewServer(eng, cfg)
+	srv.Run()
+}
+
+func getConfigPath() string {
 	configPath, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
 	}
 	// check if user has provided path
 	args := os.Args
-	fmt.Println(args)
 	if len(args) > 1 {
 		configPath = args[1]
 	}
-
-	config, err := config.Load(configPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(config)
+	return configPath
 }
