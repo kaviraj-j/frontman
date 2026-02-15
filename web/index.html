@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Frontman API Stats Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: sans-serif;
+        background: #f9f9f9;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 900px;
+        margin: 40px auto;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px #0001;
+        padding: 32px;
+      }
+      h1 {
+        font-size: 2em;
+        margin-bottom: 0.5em;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1em;
+      }
+      th,
+      td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+      }
+      th {
+        background: #f3f3f3;
+      }
+      .route {
+        font-weight: bold;
+        color: #2a5d9f;
+      }
+      .upstream {
+        color: #555;
+      }
+      .server {
+        color: #333;
+      }
+      .status-codes {
+        font-size: 0.95em;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Frontman API Stats Dashboard</h1>
+      <div id="stats"></div>
+    </div>
+    <script>
+      async function fetchStats() {
+        const res = await fetch("/api/stats");
+        if (!res.ok) {
+          document.getElementById("stats").innerHTML =
+            "<p>Failed to load stats.</p>";
+          return;
+        }
+        const data = await res.json();
+        renderStats(data);
+      }
+
+      function renderStats(data) {
+        if (!data || Object.keys(data).length === 0) {
+          document.getElementById("stats").innerHTML =
+            "<p>No stats available.</p>";
+          return;
+        }
+        let html = "";
+        for (const [route, upstream] of Object.entries(data)) {
+          html += `<h2 class="route">Route: <span>${route}</span></h2>`;
+          html += `<div class="upstream">Upstream: <b>${upstream.upstream_name}</b></div>`;
+          html +=
+            "<table><thead><tr><th>Server URL</th><th>Total Hits</th><th>Status Codes</th></tr></thead><tbody>";
+          for (const [serverUrl, server] of Object.entries(upstream.servers)) {
+            html += `<tr><td class="server">${serverUrl}</td><td>${server.total_hits}</td><td class="status-codes">`;
+            if (
+              server.response_status_count &&
+              Object.keys(server.response_status_count).length > 0
+            ) {
+              html += Object.entries(server.response_status_count)
+                .map(([code, count]) => `${code}: ${count}`)
+                .join(", ");
+            } else {
+              html += "—";
+            }
+            html += "</td></tr>";
+          }
+          html += "</tbody></table>";
+        }
+        document.getElementById("stats").innerHTML = html;
+      }
+
+      fetchStats();
+      setInterval(fetchStats, 5000);
+    </script>
+  </body>
+</html>

@@ -4,6 +4,7 @@ import (
 	"frontman/internal/config"
 	"frontman/internal/engine"
 	"frontman/internal/server"
+	"frontman/internal/stats"
 	"log"
 	"os"
 )
@@ -24,8 +25,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	eng := engine.NewEngine(cfg)
-	srv := server.NewServer(eng, cfg)
+	apiStats := stats.NewApiStats(cfg)
+
+	eng := engine.NewEngine(cfg, apiStats)
+	srv := server.NewServer(eng, cfg, apiStats)
 	srv.Run()
 }
 

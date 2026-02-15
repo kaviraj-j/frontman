@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"frontman/internal/config"
+	"frontman/internal/stats"
 )
 
 type upstreamState struct {
@@ -23,9 +24,10 @@ type Engine struct {
 	cfg       *config.Config
 	upstreams map[string]*upstreamState
 	routes    []config.Route
+	apiStats  *stats.ApiStats
 }
 
-func NewEngine(cfg *config.Config) *Engine {
+func NewEngine(cfg *config.Config, apiStats *stats.ApiStats) *Engine {
 	u := make(map[string]*upstreamState)
 	for _, up := range cfg.Upstreams {
 		// copy servers slice
@@ -33,7 +35,7 @@ func NewEngine(cfg *config.Config) *Engine {
 		copy(servers, up.Servers)
 		u[up.Name] = &upstreamState{servers: servers}
 	}
-	return &Engine{cfg: cfg, upstreams: u, routes: cfg.Routes}
+	return &Engine{cfg: cfg, upstreams: u, routes: cfg.Routes, apiStats: apiStats}
 }
 
 // HandleRequest selects a backend for the provided path using round-robin
@@ -93,11 +95,13 @@ func (e *Engine) HandleRequest(r *http.Request) (*http.Response, error) {
 
 	// Forward
 	resp, err := http.DefaultClient.Do(outReq)
-	if err != nil {
-		return nil, err
+	if err == nil {
+		// Update API stats on success
+		if e.apiStats != nil {
+			e.apiStats.Update(route.Path, backend, resp.StatusCode)
+		}
 	}
-
-	return resp, nil
+	return resp, err
 }
 
 // matchRoute finds the best (longest prefix) route matching the request path.
